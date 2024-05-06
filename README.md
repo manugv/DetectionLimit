@@ -1,4 +1,4 @@
-* Installation:
+* Installation
 
 First, you will have navigate to the project folder containing your Project.toml.
 $cd folder
