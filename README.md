@@ -1,6 +1,6 @@
-* Installation
+# Installation
 
-- First, you will have navigate to the project folder containing your Project.toml.
+- First, navigate to the project folder containing your Project.toml.
 ```bash
 	 $cd folder
 	 $julia --project=.
@@ -8,7 +8,8 @@
 	 $julia> instantiate
 ```
 
-* Running code: Go to examples in project directory
+# Running code
+- Go to examples in the project directory
 ```bash
 	$julia --threads=4 --project=TangoDirectory detectionlimit.jl
 ```
