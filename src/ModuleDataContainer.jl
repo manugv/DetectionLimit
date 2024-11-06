@@ -28,6 +28,11 @@ struct PlumeParams
     threshold::Float64
 end
 
+struct Fileandkeys
+    filename::String
+    timekeys::Vector{String}
+end
+
 mutable struct DetectionLimitVars
     const samples::Int64
     const cdfflag::Bool
@@ -133,6 +138,16 @@ mutable struct DetectionLimitData
         emis = EmissionData(0.0, sh)
         return new(resdata, 0.0, emis, "", [], [], lvl2r)
     end
+end
+
+
+mutable struct ConcData
+    const source::Vector{Float64}
+    const emissionstrength::Float64
+    const grid::Grid2d
+    time::Int64
+    conc::Matrix{Float64}
+    convolved_conc::Matrix{Float64}    
 end
 
 

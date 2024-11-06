@@ -1,8 +1,12 @@
-module InputData
+module TOMLData
 
 using TOML
+using CSV: read as csvread
+using DataFrames: DataFrame
 using ..Datacontainer
 using ..Constants
+using HDF5
+
 
 ################################################################################
 
@@ -71,46 +75,6 @@ function general_simulation_parameters(df1)
 end
 
 
-#############################################################################
-# function get_air_const(df)
-#     gas_var = get_var(df, "AIR")
-#     mass = get_var(gas_var, "mol_mass")
-#     tot_mass = get_var(gas_var, "integrated_column_mass")
-#     tot_airmass_moles = tot_mass / mass
-#     return Datacontainer.airconst("air", mass, tot_airmass_moles)
-# end
-
-
-"""
-    get_gas_const(df, gas, tot_airmass_moles)
-
-TBW
-"""
-# function get_gas_const(df, gas, tot_airmass_moles)
-#     gas_var = get_var(df, gas)
-#     mol_mass = get_var(gas_var, "mol_mass")
-#     back = get_var(gas_var, "background")
-#     ppm_to_gms = tot_airmass_moles * mol_mass / 1e6
-#     return Datacontainer.gasconst(gas, mol_mass, back, ppm_to_gms)
-# end
-
-
-"""
-    get_gasconstants(df)
-
-TBW
-"""
-# function get_gasconstants(df)
-#     av = df["avogadro"]
-#     air = get_air_const(df)
-#     co2 = get_gas_const(df, "CO2", air.column_mass_moles)
-#     ch4 = get_gas_const(df, "CH4", air.column_mass_moles)
-#     no2 = get_gas_const(df, "NO2", air.column_mass_moles)
-#     return Datacontainer.GasConstants(av, air, co2, ch4, no2)
-# end
-################################################################################
-
-
 function get_lsqparams(df)
     v1 = get_var(df, "level4precision")
     v2 = get_var(df, "cdfflag")
@@ -158,5 +122,66 @@ function getparameters(filename)
     return simparams, simvar
 end
 
+
+"""
+This get the file name and 
+"""
+function directory_simtimes(filename)
+    df = TOML.parsefile(filename)
+    dd = get_var(df, "MicroHHData")
+    filename = get_var(dd, "inputdatafilename")
+    # check if the file exists
+    if ~isfile(filename)
+        println("Concentration file do not exist")
+        exit()
+    end
+    # read all keys in the file
+    fid = h5open(filename, "r")
+    _ky = keys(fid)
+    # filtervals = ["grid", "source"]
+    _ky1 = filter!(x-> x != "grid", _ky)
+    _ky = filter!(x-> x != "source", _ky1)
+    close(fid)
+    return Datacontainer.Fileandkeys(filename, _ky1)
+end
+
+#############################################################################
+# function get_air_const(df)
+#     gas_var = get_var(df, "AIR")
+#     mass = get_var(gas_var, "mol_mass")
+#     tot_mass = get_var(gas_var, "integrated_column_mass")
+#     tot_airmass_moles = tot_mass / mass
+#     return Datacontainer.airconst("air", mass, tot_airmass_moles)
+# end
+
+
+"""
+    get_gas_const(df, gas, tot_airmass_moles)
+
+TBW
+"""
+# function get_gas_const(df, gas, tot_airmass_moles)
+#     gas_var = get_var(df, gas)
+#     mol_mass = get_var(gas_var, "mol_mass")
+#     back = get_var(gas_var, "background")
+#     ppm_to_gms = tot_airmass_moles * mol_mass / 1e6
+#     return Datacontainer.gasconst(gas, mol_mass, back, ppm_to_gms)
+# end
+
+
+"""
+    get_gasconstants(df)
+
+TBW
+"""
+# function get_gasconstants(df)
+#     av = df["avogadro"]
+#     air = get_air_const(df)
+#     co2 = get_gas_const(df, "CO2", air.column_mass_moles)
+#     ch4 = get_gas_const(df, "CH4", air.column_mass_moles)
+#     no2 = get_gas_const(df, "NO2", air.column_mass_moles)
+#     return Datacontainer.GasConstants(av, air, co2, ch4, no2)
+# end
+################################################################################
 
 end # end module

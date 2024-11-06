@@ -1,3 +1,5 @@
+# Flag TO BE REMOVED.
+
 module ExtractDataatResolution
 
 using ImageFiltering: Kernel, imfilter, BorderArray, Pad
@@ -27,6 +29,7 @@ function convolveimage(data, fwhm)
     convolved = imfilter(data, ker)
     return convolved, ker
 end
+
 
 # convolve mean
 ff(i, j, x, nx, ny) = mean(x[i-nx:i+nx, j-ny:j+ny])

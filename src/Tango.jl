@@ -10,6 +10,7 @@ include("ModuleSatelliteRetrieval.jl")
 include("ModuleHDF.jl")
 include("ModuleLSQ.jl")
 include("ModuleMicroHH.jl")
+include("ModuleData.jl")
 include("ModuleCFM.jl")
 include("ModuleDetectionLimit.jl")
 

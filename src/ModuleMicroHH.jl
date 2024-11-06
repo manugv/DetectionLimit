@@ -1,3 +1,5 @@
+# Recode to convert microhh code to data that can be read in detection limit algorithm.
+
 module MicroHH
 
 using CSV: read as csvread
@@ -7,23 +9,8 @@ using NCDatasets
 using ..Datacontainer: Grid3d, ResolutionData, RectGrid2d, Grid2d
 using ..ExtractDataatResolution
 using ..Constants
-using ..InputData: TOML, get_var
+using ..TOMLData: TOML, get_var
 using HDF5
-
-struct Directoryandtimes
-    datadir::String
-    filetimes::Vector{Int64}
-end
-
-
-mutable struct ConcData
-    const source::Vector{Float64}
-    const emissionstrength::Float64
-    const grid::Grid2d
-    time::Int64
-    conc::Matrix{Float64}
-    convolved_conc::Matrix{Float64}    
-end
 
 
 mutable struct MicroHHData
@@ -51,11 +38,11 @@ end
 function directory_simtimes(filename)
     df = TOML.parsefile(filename)
     dd = get_var(df, "MicroHHData")
-    dr = get_var(dd, "dir")
-    _file_time = get_var(dd, "times_file")
+    dr = get_var(dd, "inputdatafilename")
+    _file_time = get_var(dd, "time")
     # Get array of times corresponding to plumes
     simtimes = csvread(_file_time, DataFrame)
-    return Directoryandtimes(dr, simtimes.time)
+    return Fileandkeys(dr, simtimes.time)
 end
 
 
@@ -398,7 +385,6 @@ function gridsandextract_mean(resolution::Float64, microhhdata, xshift=1, yshift
     resdata.conc *= 1.0/microhhdata.emissionstrength
     return resdata
 end
-
 
   
 end # end module

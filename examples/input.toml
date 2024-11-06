@@ -1,29 +1,29 @@
 [GeneralSimulationParameters]
-    # simulation name which defines group name
-    simulationname = "sim1"
-    # resolution in mts
-    resolution = [60.0, 120.0, 180.0, 240.0, 300.0, 400.0, 500.0, 600.0, 800.0, 1000.0, 1200.0, 1400.0, 1600.0, 1800.0, 2000.0]
-    # define in percentage
-    level2precision = [0.05]
-    # gas to be simulated
-    gas = "CO2"
-    # output file location: output file will be based on the name of gas
-    outputfile = "../data/detlimit_co2.h5"
+# simulation name which defines group name
+simulationname = "sim1"
+# resolution in mts
+resolution = [60.0, 120.0, 180.0, 240.0, 300.0, 400.0, 500.0, 600.0, 800.0, 1000.0, 1200.0, 1400.0, 1600.0, 1800.0, 2000.0]
+# define in percentage
+level2precision = [0.05]
+# gas to be simulated
+gas = "CO2"
+# output file location: output file will be based on the name of gas
+outputfile = "../data/detlimit_co2.h5"
     
-    [GeneralSimulationParameters.NO2toCO2]
-        # NO2 to co2 conversion
-        nox_to_co2 = 0.001
-        absoluteerror = 5E19
-        relativeerror = 0.25
-        flag = false
+[GeneralSimulationParameters.NO2toCO2]
+# NO2 to co2 conversion
+nox_to_co2 = 0.001
+absoluteerror = 5E19
+relativeerror = 0.25
+flag = false
 
 [MicroHHData]
-    dir = "../data/Microhh_CO2.h5"
+inputdatafilename = "../data/Microhh_CO2.h5"
 
 [DetectionLimit]
-    # flag for absolute threshold or relative one
-    samples = 50000
-    cdfflag = false
-    threshold = 2.06  # if cdfflag true then specify in % of pixels else in ppm
-    numberofpixels = 7
-    plumelength = 0
+# flag for absolute threshold or relative one
+samples = 50000
+cdfflag = false
+threshold = 2.06  # if cdfflag true then specify in % of pixels else in ppm
+numberofpixels = 7
+plumelength = 0

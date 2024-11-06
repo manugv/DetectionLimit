@@ -4,6 +4,7 @@ if isdefined(@__MODULE__, :LanguageServer)
 else
     using Tango
 end
+
 using Interpolations
 using Statistics: mean
 using CSV, DataFrames
@@ -59,10 +60,10 @@ tomlfilename = "input.toml"
 fun_deltaemission, fun_initialemission = get_co2interp()
 
 # simulation parameters
-simparams, detectionlimitparams = Tango.InputData.getparameters(tomlfilename)
+simparams, detectionlimitparams = Tango.TOMLData.getparameters(tomlfilename)
 
-# read microhh data directory and time
-microhh_datadir = Tango.MicroHH.directory_simtimes(tomlfilename)
+# read data directory and time
+dataparams = Tango.TOMLData.directory_simtimes(tomlfilename)
 
 # level 2 precision change if needed
 lvl2precision = 0.005
@@ -70,14 +71,9 @@ if ~detectionlimitparams.cdfflag
     detectionlimitparams.threshold = lvl2precision*simparams.gas.background
 end
 
-# time stamp from commandline
-# _time = parse(Int, ARGS[1])
-# time stamp manually (see MicroHH_CO2.h5 keys in data)
-_time = 29700 # 70200
-println(_time)
-
 # read microhh data for a given time
-microhhdata = Tango.MicroHH.get_concdata(microhh_datadir, _time)
+concdata = Tango.SimData.get_concdata(dataparams.filename, dataparams.timekeys[1])
+
 # write attributes to simulation group
 attr_names = ["samples", "level2precision", "threshold", "numberofpixels", "plumelength", "cfdflag"]
 attr_values = [detectionlimitparams.samples, lvl2precision, detectionlimitparams.threshold,
@@ -85,39 +81,47 @@ attr_values = [detectionlimitparams.samples, lvl2precision, detectionlimitparams
                detectionlimitparams.cdfflag]
 Tango.ModReadWrite.write_grp_attributedata(simparams.outputfile, simparams.simulationname, attr_names, attr_values)
 
-# initialize empty detection data array
-# pick a resolution or loop over all resolutions
+
+# pick a resolution
 i = 5 # 300m
 res = simparams.resolution[i]
-
-# compute ensambles and shifts for the resolution
-shifts, nos_ensembles = compute_shifts(microhhdata.grid.dx, microhhdata.grid.dy, res)
 println("   ", res,  " ", lvl2precision, "  ", detectionlimitparams.threshold)
 
 # convolve data at a resolution
-fwhm = res / microhhdata.grid.dx
-microhhdata.convolved_conc, _ = Tango.ExtractDataatResolution.convolveimage(microhhdata.conc, fwhm)
+fwhm = res / concdata.grid.dx     # full mean half width
+concdata.convolved_conc, _ = Tango.SimData.convolveimage(concdata.conc, fwhm)
 
-# initialize the detection limit for CO2
-init_emission = fun_initialemission(res)
-deltaemis = fun_deltaemission(res)
+# Define initial variables to compute the detection limit
+init_emission = fun_initialemission(res)    # Initial emission
+deltaemis = fun_deltaemission(res)          # Delta emission
+
+# Data Sampling at a resolution
+# compute variables defining all possible samples
+shifts, nos_ensembles = compute_shifts(concdata.grid.dx, concdata.grid.dy, res)
 
 # loop over all ensambles : for simplicity do one ensamble
 ensemb = 1
 println("                ensemble= ", ensemb)  
-# define detectdata
-resdata = Tango.MicroHH.gridsandextract(res, microhhdata, shifts[ensemb,1], shifts[ensemb,2])
+
+# Sample data and extract data at a resolution. This is actual data.
+resdata = Tango.SimData.gridsandextract(res, concdata, shifts[ensemb,1], shifts[ensemb,2])
+# Create a data structure to compute the detection limit.
 detectdata = Tango.Datacontainer.DetectionLimitData(resdata)
-# get initial emission
-detectdata.init_emission = init_emission
-# define group name
+
+# Compute few detection limits for a given range of detection probability
+# range used here is 0.675 - 0.685 and minimal of 4 points are needed.
+# Writing data: define group name 
 detectdata.groupname = get_groupname(simparams.simulationname, res)
-# compute detection limits data
+
+# initialize initial emission
+detectdata.init_emission = init_emission
+
+# Compute detection limits for the detection probability range.
 Tango.Detectionlimit.getdatafornoise(simparams, detectionlimitparams, lvl2precision,
                                      detectdata, [0.675, 0.685], deltaemis)
 
-# make sure there are 4 points in 0.01 detection limit between 0.675 - 0.685
-# a kind of optimzation algorithm
+# check if there are 4 points in the detection probability range.
+# if not increase the sampling of emissions.
 nos1 = sum((detectdata.probabilities .>= 0.675) .& (detectdata.probabilities .<= 0.685))
 kl = 1
 while nos1 < 4
@@ -148,6 +152,6 @@ Tango.ModReadWrite.write_output_data(simparams.outputfile, detectdata.groupname,
                                      "emission_"*string(ensemb), detectdata.allemissions)
 Tango.ModReadWrite.write_output_data(simparams.outputfile, detectdata.groupname,
                                      "probabilities_"*string(ensemb), detectdata.probabilities)
-# update the init_emission for faster computation in ensembles
-init_emission = interpolate_for_detectionprob(detectdata.probabilities, detectdata.allemissions, 0.68)
 
+# update the init_emission for faster computation in the sampling ensembles.
+init_emission = interpolate_for_detectionprob(detectdata.probabilities, detectdata.allemissions, 0.68)
