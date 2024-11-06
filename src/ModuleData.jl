@@ -36,14 +36,14 @@ end
 
 
 """
-    get_concdata(filename, time)
+    get_concdata(filename, _key)
 
 Get concentration from given file and its key
 """
 function get_concdata(filename::String, _key::String)
     if ~isfile(filename)
         println("Data file not present")
-    end        
+    end       
     fid = h5open(filename, "r")
     conc = read(fid[_key])  # in ppm
     emissionstrength = read_attribute(fid[_key], "strength")
@@ -53,7 +53,7 @@ function get_concdata(filename::String, _key::String)
     yn = read(fid["grid/yn"])
     grid = Grid2d(x, y, xn, yn, x[2]-x[1], y[2]-y[1], length(x), length(y))
     source = read(fid["source"])
-    return ConcData(source, emissionstrength, grid, time, conc, zeros(size(conc)))
+    return ConcData(source, emissionstrength, grid, conc, zeros(size(conc)))
 end
 
 
@@ -105,7 +105,7 @@ end
 """
     gridsandconvolve(resolution::Float64, data::MicroHHData)
 
-    conc corresponds to emission 1 
+    conc corresponds to emission 1MT/y
 """
 function gridsandextract(resolution::Float64, conc_data, xshift=1, yshift=1)
     grid2d, origin_id, dist, ix, iy = samplegridatresolution(conc_data, resolution, xshift, yshift)
@@ -116,5 +116,13 @@ function gridsandextract(resolution::Float64, conc_data, xshift=1, yshift=1)
     return resdata
 end
 
+
+function compute_shifts(dx, dy, res)
+    shx = Int(ceil(res/dx))
+    shy = Int(ceil(res/dy))
+    x1 = (1:shx)' .* ones(Int64, shy)
+    y1 = ones(Int64, shx)' .* (1:shy)
+    return hcat(vec(x1), vec(y1)), length(vec(x1))
+end
 
 end

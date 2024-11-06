@@ -22,19 +22,6 @@ function get_co2interp()
     return fun_deltaemission, fun_initialemission
 end
     
-function get_groupname(simname, res)
-    return simname * "/Res_" * string(Int(res))
-end
-
-
-function compute_shifts(dx, dy, res)
-    shx = Int(ceil(res/dx))
-    shy = Int(ceil(res/dy))
-    x1 = (1:shx)' .* ones(Int64, shy)
-    y1 = ones(Int64, shx)' .* (1:shy)
-    return hcat(vec(x1), vec(y1)), length(vec(x1))
-end
-
 
 function interpolate_for_detectionprob(prob, emis, detect_prob)
     k = searchsortedfirst(prob, detect_prob)
@@ -97,7 +84,7 @@ deltaemis = fun_deltaemission(res)          # Delta emission
 
 # Data Sampling at a resolution
 # compute variables defining all possible samples
-shifts, nos_ensembles = compute_shifts(concdata.grid.dx, concdata.grid.dy, res)
+shifts, nos_ensembles = Tango.SimData.compute_shifts(concdata.grid.dx, concdata.grid.dy, res)
 
 # loop over all ensambles : for simplicity do one ensamble
 ensemb = 1
@@ -111,7 +98,7 @@ detectdata = Tango.Datacontainer.DetectionLimitData(resdata)
 # Compute few detection limits for a given range of detection probability
 # range used here is 0.675 - 0.685 and minimal of 4 points are needed.
 # Writing data: define group name 
-detectdata.groupname = get_groupname(simparams.simulationname, res)
+detectdata.groupname = simparams.simulationname * "/Res_" * string(Int(res))
 
 # initialize initial emission
 detectdata.init_emission = init_emission

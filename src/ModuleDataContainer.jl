@@ -17,11 +17,20 @@ struct GeneralSimulationparameters
     no2_to_co2::NO2toCO2
 end
 
+# struct LSQParams
+#     level4precision::Float64
+#     cdfflag::Bool
+#     threshold::Float64
+# end
+
 struct LSQParams
-    level4precision::Float64
-    cdfflag::Bool
-    threshold::Float64
+    emission::AbstractRange
+    no_pixels::Int16
+    function LSQParams(emis, pxs)
+        return new(emis[1]:emis[3]:emis[2], pxs)
+    end
 end
+
 
 struct PlumeParams
     cdfflag::Bool
@@ -113,6 +122,15 @@ mutable struct ResolutionData
 end
 
 
+mutable struct ConcData
+    const source::Vector{Float64}
+    const emissionstrength::Float64
+    const grid::Grid2d
+    conc::Matrix{Float64}
+    convolved_conc::Matrix{Float64}    
+end
+
+
 mutable struct EmissionData
     emission::Float64
     conc::Matrix{Float64}
@@ -138,16 +156,6 @@ mutable struct DetectionLimitData
         emis = EmissionData(0.0, sh)
         return new(resdata, 0.0, emis, "", [], [], lvl2r)
     end
-end
-
-
-mutable struct ConcData
-    const source::Vector{Float64}
-    const emissionstrength::Float64
-    const grid::Grid2d
-    time::Int64
-    conc::Matrix{Float64}
-    convolved_conc::Matrix{Float64}    
 end
 
 
