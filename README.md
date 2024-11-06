@@ -13,4 +13,5 @@
 - Go to examples in the project directory
 ```bash
 	$julia --threads=4 --project=TangoDirectory detectionlimit.jl
+	$julia --threads=4 --project=TangoDirectory lsq.jl
 ```

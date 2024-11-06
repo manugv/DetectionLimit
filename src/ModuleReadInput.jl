@@ -76,10 +76,12 @@ end
 
 
 function get_lsqparams(df)
-    v1 = get_var(df, "level4precision")
-    v2 = get_var(df, "cdfflag")
-    v3 = get_var(df, "threshold")
-    return Datacontainer.LSQParams(v1, v2, v3)
+    if "Level4Precision" in keys(df)
+        df1 = df["Level4Precision"]
+        v1 = get_var(df1, "emission")
+        v2 = get_var(df1, "numberofpixels")
+        return Datacontainer.LSQParams(v1, v2)
+    end
 end
 
 
@@ -128,7 +130,7 @@ This get the file name and
 """
 function directory_simtimes(filename)
     df = TOML.parsefile(filename)
-    dd = get_var(df, "MicroHHData")
+    dd = get_var(df, "PlumeData")
     filename = get_var(dd, "inputdatafilename")
     # check if the file exists
     if ~isfile(filename)

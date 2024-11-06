@@ -2,13 +2,12 @@
 # simulation name which defines group name
 simulationname = "sim1"
 # resolution in mts
-resolution = [300.0]
-# define in percentage
-level2precision = [0.5]
+resolution = [180.0, 300.0]
+level2precision = [0.005]   # corresponds to 0.5%
 # gas to be simulated
 gas = "CO2"
 # output file location: output file will be based on the name of gas
-outputfile = "/data/manugv/Tango/data/lsq/lsq.h5"   
+outputfile = "/home/manu/Downloads/Down"
 
 [GeneralSimulationParameters.NO2toCO2]
 # NO2 to co2 conversion
@@ -17,18 +16,11 @@ absoluteerror = 5E19
 relativeerror = 0.25
 flag = false
 
-[MicroHHData]
+[PlumeData]
 inputdatafilename = "../data/Microhh_CO2.h5"
 
 [LSQ]
-[LSQ.Emission]
-level4precision = 0.15  # corresponds to x*100 %
-# flag for absolute threshold or relative one
-cdfflag = false
-threshold = .6  # if cdfflag true then specify in % of pixels else in ppm
-
 [LSQ.Level4Precision]
 # flag for absolute threshold or relative one
-cdfflag = false
-threshold = 2.06  # if cdfflag true then specify in % of pixels else in ppm
+emission = [1.4, 6, 0.2]  # in MT/y [start, end, step] 
 numberofpixels = 7

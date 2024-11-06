@@ -50,9 +50,11 @@ function lsq_level4precision(data::ResolutionData, simparams::GeneralSimulationp
 end
 
 
-function getplume(resdata)
+function getplume_connect(resdata, no_pixels)
+    # get top 7 connected  pixels to the source.
     notfound = true
-    i = 7
+    # initialize
+    i = no_pixels
     while notfound
         th = partialsort(vec(resdata.conc), i, rev=true)
         plumemask = resdata.conc .>= th
@@ -60,7 +62,7 @@ function getplume(resdata)
         actualplume = resdata.conc .>= 1e-6
         segmentimage!(segmentimg, plumemask)
         goodpixels, _, plumelabel = plumepixelid(segmentimg, resdata.originindex, actualplume)
-        if goodpixels >= 7
+        if goodpixels >= no_pixels
             plume = zeros(Bool, size(segmentimg))
             plume = segmentimg .== plumelabel
             return plume
@@ -71,18 +73,31 @@ function getplume(resdata)
 end
 
 
-function flux_at_level4precision(data::ResolutionData, simparams::GeneralSimulationparameters, param_lsq::LSQParams, sigmanoise::Float64, emission)
+function getplume(resdata, no_pixels)
+    # get top 7 pixels.
+    th = partialsort(vec(resdata.conc), no_pixels, rev=true)
+    plumemask = resdata.conc .>= th
+    return plumemask
+end
+
+
+function flux_at_level4precision(data::ResolutionData, simparams::GeneralSimulationparameters, param_lsq::LSQParams, sigmanoise::Float64, method="Top")
     # compute plumemask for a given threshold. This remains constant for changing emission.
-    # get top 7 pixels
-    plumemask = getplume(data)
+    if method == "Connected"
+        # get top 7 connected pixels with the source
+        plumemask = getplume_connect(data, param_lsq.no_pixels)
+    else
+        # get top 7 pixels
+        plumemask = getplume(data, param_lsq.no_pixels)
+    end
 
     # Compute certain emission and its LSQ
-    lsq = zeros(emission.len)
+    lsq = zeros(param_lsq.emission.len)
     conc_at_emission = similar(data.conc)
     actplume = falses(size(data.conc))
-    for i=1:emission.len
+    for i=1:param_lsq.emission.len
         # compute emission
-        @. conc_at_emission = data.conc * emission[i]
+        @. conc_at_emission = data.conc * param_lsq.emission[i]
         # compute error vector for given conc
         ydata = conc_at_emission[plumemask]
 
@@ -93,7 +108,6 @@ function flux_at_level4precision(data::ResolutionData, simparams::GeneralSimulat
             # actual plume for no2
             @. actplume = false
             @. actplume = conc_at_emission > 1e-6
-
             sigmaco2_no2 = NO2Error.get_co2_noise_from_no2(conc_at_emission, data.distancefromsource, actplume, simparams.no2_to_co2)
             variance_gas = NO2Error.inversevarianceweighting(sigma_gas, sigmaco2_no2[plumemask])
         else
@@ -102,67 +116,7 @@ function flux_at_level4precision(data::ResolutionData, simparams::GeneralSimulat
         # compute the precision
         lsq[i] = compute_precision(variance_gas, ydata)
     end
-    return emission, lsq
+    return lsq
 end
-
-
-"""
-    get_data_for_lsq(data::Datacont, emission::Float64, conc=false)
-
-TBW
-"""
-function get_data_for_lsq(data::ResolutionData, emission::Float64, conc=false)
-    conc_at_emission = zeros(size(data.gas.conc))
-    @. conc_at_emission = data.gas.conc * emission
-    plumemask = get_plumemask(conc_at_emission, data.threshold, data.thresholdflag)
-    if data.no2.flag
-        no_error = get_co2_noise_from_no2(conc_at_emission, data.gas.dist, plumemask, data.no2)
-        return conc_at_emission[plumemask], no_error[plumemask]
-    else
-        return conc_at_emission[plumemask], 0
-    end
-end
-
-
-function fluxestimate_at_precision(sigmanoise::Float64, init_emission::Float64, data::ResolutionData, lvl4precision::Float64)
-    emission = init_emission
-    # Variables to compute detection limit
-    opt_cont = optimizecontainer(zeros(2), zeros(2), falses(2), 0.0)
-    found_emission = true
-    kk = 0
-    new_std = 0
-    # Loop till the detection limit is found
-    while found_emission
-        kk += 1
-        if kk == 1000
-            println("large number of iterations, optimize not working")
-            println(opt_cont.emis, "   ", opt_cont.sd)
-            return emission, new_std
-        end
-        # some times things are not successful as the threshold for plumemask 
-        # is much higher than the avaliable enhancements
-        # If threshold is too high then success_info is false
-        ydata, co2_error_no2 = get_data_for_lsq(data, emission)
-        gas_noise_vector = get_noise(data.background_ppm, sigmanoise, ydata)
-        if data.no2.flag
-            noise_vector = inverse_variance(gas_noise_vector, co2_error_no2)
-        else
-            noise_vector = gas_noise_vector .^ 2
-        end
-        new_std = compute_precision(noise_vector, ydata)
-        # make the l4 precision relative
-        new_std /= emission
-        # println(new_std, " ", emission, ";")
-        println("        STD of LSQ = ", new_std, "  for emission= ", emission, "  ", kk)
-        info = get_optimization_flag(emission, new_std, opt_cont, lvl4precision)
-        if info
-            found_emission = false
-        else
-            emission, opt_cont = optmize_emission_mid(emission, new_std, opt_cont, lvl4precision)
-        end
-    end
-    return emission, new_std
-end
-
 
 end # end module
